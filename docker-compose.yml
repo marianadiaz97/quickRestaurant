@@ -1,0 +1,57 @@
+version: '3.8'
+
+x-laravel-env: &laravel-env
+  NODE_EXECUTABLE: node
+  DB_HOST: db_quick
+  DB_USERNAME: user
+  DB_PASSWORD: db_pass
+  DB_DATABASE: db_dev
+
+services:
+  server_quick:
+    image: lorisleiva/laravel-docker:7.3
+    networks:
+      - main
+    environment:
+      <<: *laravel-env
+      # color prompt
+      PS1: "\\[\\e[1;34m\\]\\w \\[\\e[0;35m\\]\\$$\\[\\e[m\\] "
+    command: php artisan serve --host 0.0.0.0
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app
+    working_dir: /app
+  db_quick:
+    image: mariadb:10.5
+    networks:
+      - main
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+      MYSQL_USER: user
+      MYSQL_PASSWORD: db_pass
+      MYSQL_DATABASE: db_dev
+    ports:
+      - 3306:3306
+  migrate_quick: # migrate and exit
+    depends_on:
+      - db_quick
+    image: lorisleiva/laravel-docker:7.3
+    networks:
+      - main
+    environment:
+      <<: *laravel-env
+    restart: 'no'
+    command: php artisan migrate:fresh --seed
+    volumes:
+      - .:/app
+    working_dir: /app
+  watch_quick:
+    image: lorisleiva/laravel-docker:7.3
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: bash -c "npm rebuild && npm i && npm run watch"
+
+networks:
+  main:
